@@ -1,0 +1,63 @@
+{
+  "device": {
+    "name": "Smart bulb",
+    "model": "Smart Bulb 2 (Tuya Beacon Mesh P2)",
+    "firmware": "1.2",
+    "product_id": "wbl39qpt",
+    "device_id": "YOUR_DEVICE_ID",
+    "local_key": "0123456789abcdef",
+    "beacon_key": "000102030405060708090a0b0c0d0e0f"
+  },
+  "controller": {
+    "state": "",
+    "adapter": "hci0",
+    "src": "0x7a59",
+    "phone_src": "0x7a59",
+    "dst": "0x0003",
+    "transport": "mgmt",
+    "multi_dp": true,
+    "frames": 1,
+    "duration": "500ms",
+    "gap": "120ms",
+    "flags": "01",
+    "kelvin_min": 2700,
+    "kelvin_max": 6500,
+    "invert_temp": false,
+    "scan": true,
+    "clear_all": false,
+    "dry_run": false,
+    "adv_interval": "20ms"
+  },
+  "learn": {
+    "out": "",
+    "auto": true,
+    "timeout": "120s"
+  },
+  "qr": {
+    "user_code": "",
+    "app": "smartlife",
+    "timeout": "4m",
+    "save": true
+  },
+  "cloud": {
+    "region": "eu",
+    "device_id": "",
+    "save": false
+  },
+  "mqtt": {
+    "enabled": true,
+    "broker": "tcp://localhost:1883",
+    "username": "",
+    "password": "",
+    "password_env": "",
+    "client_id": "tuya-beacon-mesh-p2-controller",
+    "topic_prefix": "tuya-beacon-mesh-p2-controller",
+    "ha_discovery_enabled": true,
+    "ha_discovery_prefix": "homeassistant",
+    "debounce": "100ms",
+    "max_wait": "450ms",
+    "dedup_window": "350ms",
+    "tx_duration": "250ms",
+    "light_name": "Light"
+  }
+}

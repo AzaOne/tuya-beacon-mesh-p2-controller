@@ -1,0 +1,33 @@
+# Never commit real Tuya local / beacon keys.
+*verified.json
+tuya-lamp-re.json
+beacon_key.json
+keys.json
+seq.json
+state-*.json
+state-*.json.lock
+*.log
+*.btsnoop
+*.cfa
+/tuya-beacon-mesh-p2-controller
+/tuya-beacon-mesh-p2-controller-server
+/build/
+/state/
+
+*.test
+coverage.out
+state-*.json.tx.lock
+/config.json
+/recovered*.json
+/private*/
+*.secret
+
+# Config backups and temporary files can contain device keys.
+*.json.bak-*
+.tuya-beacon-mesh-p2-controller-config-*.tmp
+.tuya-p2-config-*.tmp
+
+# Local workspace settings and credentials.
+/.agents/
+/.codex/
+/.aws/
