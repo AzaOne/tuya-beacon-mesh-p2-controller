@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"example.com/tuya-beacon-mesh-p2-controller/internal/p2"
+	"example.com/tuya-beacon-mesh-p2-controller/internal/xdg"
 )
 
 // Initial value is the last observed counter in the user's 2026-11-20 capture,
@@ -137,13 +138,13 @@ func CleanDeviceID(deviceID string) string {
 }
 
 func DefaultStatePath(deviceID string) string {
-	return filepath.Join("state", "state-"+CleanDeviceID(deviceID)+".json")
+	return filepath.Join(xdg.StateDir(), "state-"+CleanDeviceID(deviceID)+".json")
 }
 
 // Old v2 location, used solely to import the latest seq when upgrading.
 func legacyStatePath(deviceID string) (string, error) {
 	base := os.Getenv("XDG_STATE_HOME")
-	if base == "" {
+	if !filepath.IsAbs(base) {
 		home, err := os.UserHomeDir()
 		if err != nil {
 			return "", err
@@ -162,7 +163,7 @@ func MigrateLegacyState(newPath, device, fp string) (bool, error) {
 		return false, err
 	}
 	name := filepath.Base(DefaultStatePath(device))
-	paths := []string{name}
+	paths := []string{name, filepath.Join("state", name)}
 	exe, err := os.Executable()
 	if err != nil {
 		return false, err

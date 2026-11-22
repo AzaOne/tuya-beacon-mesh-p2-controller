@@ -1,6 +1,8 @@
 package cli
 
-const usageText = `tuya-beacon-mesh-p2-controller v9.3.6 — Tuya Beacon Mesh P2 CLI / BlueZ advertising
+import "example.com/tuya-beacon-mesh-p2-controller/internal/version"
+
+var usageText = `tuya-beacon-mesh-p2-controller ` + version.String() + ` — Tuya Beacon Mesh P2 CLI / BlueZ advertising
 
 Usage: tuya-beacon-mesh-p2-controller [options] <command> [args]
 
@@ -35,7 +37,7 @@ Monitoring, recovery, automation:
 
 Options BEFORE command:
   -config FILE         JSON containing device.local_key + beacon_key
-  -state FILE          state JSON; default ./state/state-<device-id>.json
+  -state FILE          state JSON; default $XDG_STATE_HOME/tuya-beacon-mesh-p2-controller/state-<device-id>.json
   -adapter hci0        Bluetooth adapter
   -src 0x7a59          local logical transmitter source, experimental alternatives
   -phone-src 0x7a59    source of Smart Life commands, for monitor/sync/learn
@@ -52,6 +54,7 @@ Options BEFORE command:
   -scan=true           start active scan when monitoring
   -clear-all           only for legacy btmgmt fallback (dangerous)
   -dry-run             print frames without transmitting/reserving seq
+  -learn-save=true     update device.beacon_key in config after verification
   -learn-out FILE      create new 0600 beacon-key JSON after learn
   -learn-auto=true     discover source/destination from verified frames
   -learn-timeout 120s  timeout for live learn

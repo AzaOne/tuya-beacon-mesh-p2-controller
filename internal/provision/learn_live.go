@@ -62,7 +62,7 @@ func recoverKeyAuto(frames [][]byte, k1 []byte, preferredSrc, preferredDst uint1
 // HCI monitor helper, WITHOUT requiring beacon_key. It cannot see the phone's
 // private HCI stream; only frames received over radio by the PC's adapter.
 func LearnLive(ctx context.Context, configPath, output, adapter string,
-	src, dst uint16, autoAddress, autoScan bool, timeout time.Duration) error {
+	src, dst uint16, autoAddress, autoScan, save bool, timeout time.Duration) error {
 
 	data, err := os.ReadFile(configPath)
 	if err != nil {
@@ -192,16 +192,7 @@ func LearnLive(ctx context.Context, configPath, output, adapter string,
 					if err != nil {
 						continue
 					}
-					if output != "" {
-						if err := saveLearnResult(output, learned); err != nil {
-							return err
-						}
-						fmt.Printf("Verified %d P2 frames and %d distinct DP payloads; recovered beacon_key saved (0600) to %s\n", learned.VerifiedFrames, learned.DistinctDPs, output)
-					} else {
-						fmt.Printf("Verified %d P2 frames and %d distinct DP payloads. Pass -learn-out <file> to save recovered beacon_key.\n", learned.VerifiedFrames, learned.DistinctDPs)
-					}
-					fmt.Printf("Detected src=%s dst=%s; update -phone-src/-dst if they changed.\n", learned.Source, learned.Destination)
-					return nil
+					return finishLearn(configPath, cfg, learned, output, save)
 				}
 			}
 		}

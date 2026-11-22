@@ -47,6 +47,7 @@ func Run(ctx context.Context, argv []string) error {
 	fs.StringVar(&radio.Backend, "transport", radio.Backend, "mgmt (fast) | mgmt-legacy | raw-hci | btmgmt")
 	fs.BoolVar(&radio.MultiDP, "multi-dp", radio.MultiDP, "pack several datapoints in 16B block")
 	fs.StringVar(&radio.PhoneSrc, "phone-src", radio.PhoneSrc, "phone mesh source for monitor")
+	learnSave := fs.Bool("learn-save", defaults.Learn.Save, "save verified beacon_key to config")
 	learnOut := fs.String("learn-out", defaults.Learn.Out, "save recovered key in new 0600 JSON file")
 	learnAuto := fs.Bool("learn-auto", defaults.Learn.Auto, "auto detect src/dst on verified P2 frames")
 	learnTimeout := fs.Duration("learn-timeout", learnTimeoutDefault, "listen duration for learn live")
@@ -121,9 +122,9 @@ func Run(ctx context.Context, argv []string) error {
 			if *learnTimeout < 5*time.Second || *learnTimeout > 30*time.Minute {
 				return errors.New("-learn-timeout must be 5s..30m")
 			}
-			return provision.LearnLive(ctx, *cfgPath, *learnOut, radio.Adapter, options.PhoneSrc, options.Dst, *learnAuto, *scan, *learnTimeout)
+			return provision.LearnLive(ctx, *cfgPath, *learnOut, radio.Adapter, options.PhoneSrc, options.Dst, *learnAuto, *scan, *learnSave, *learnTimeout)
 		}
-		return provision.LearnFromCapture(*cfgPath, args[1], *learnOut, options.PhoneSrc, options.Dst, *learnAuto)
+		return provision.LearnFromCapture(*cfgPath, args[1], *learnOut, options.PhoneSrc, options.Dst, *learnAuto, *learnSave)
 	}
 
 	device, err := app.OpenDevice(*cfgPath, *statePath, options, radio.Transport())

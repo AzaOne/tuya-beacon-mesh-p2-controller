@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"syscall"
 	"time"
 )
 
@@ -16,25 +18,89 @@ func UpdateLocalKeyConfig(path, deviceID, localKey string) (changed bool, err er
 	if _, err := ParseKey(localKey); err != nil {
 		return false, err
 	}
+	return updateDevice(path, func(device map[string]json.RawMessage) (bool, error) {
+		var oldID, oldLocal string
+		_ = json.Unmarshal(device["device_id"], &oldID)
+		_ = json.Unmarshal(device["local_key"], &oldLocal)
+		if oldID != "" && oldID != deviceID {
+			return false, fmt.Errorf("config belongs to different device %s", oldID)
+		}
+		if oldLocal == localKey {
+			return false, nil
+		}
+
+		setDeviceString(device, "device_id", deviceID)
+		setDeviceString(device, "local_key", localKey)
+		if oldLocal != "" && oldLocal != localKey {
+			setDeviceString(device, "beacon_key", "")
+		}
+		return true, nil
+	})
+}
+
+func setDeviceString(device map[string]json.RawMessage, field, value string) {
+	b, _ := json.Marshal(value)
+	device[field] = b
+}
+
+func UpdateBeaconKeyConfig(path, deviceID, localKey, beaconKey string) (bool, error) {
+	if _, err := ParseKey(beaconKey); err != nil {
+		return false, err
+	}
+	return updateDevice(path, func(device map[string]json.RawMessage) (bool, error) {
+		var id, local, beacon string
+		_ = json.Unmarshal(device["device_id"], &id)
+		_ = json.Unmarshal(device["local_key"], &local)
+		_ = json.Unmarshal(device["beacon_key"], &beacon)
+		if id != deviceID || local == "" || local != localKey {
+			return false, errors.New("device or local_key changed during learning")
+		}
+		if beacon == beaconKey {
+			return false, nil
+		}
+		setDeviceString(device, "beacon_key", beaconKey)
+		return true, nil
+	})
+}
+
+func updateDevice(path string, update func(map[string]json.RawMessage) (bool, error)) (changed bool, err error) {
+	dir := filepath.Dir(path)
+	if err = os.MkdirAll(dir, 0700); err != nil {
+		return false, err
+	}
+	lock, err := os.Open(dir)
+	if err != nil {
+		return false, err
+	}
+	defer lock.Close()
+	if err = syscall.Flock(int(lock.Fd()), syscall.LOCK_EX); err != nil {
+		return false, err
+	}
 	var raw map[string]json.RawMessage
 	var original []byte
-	info, statErr := os.Lstat(path)
+	var info os.FileInfo
+	file, openErr := os.OpenFile(path, os.O_RDONLY|syscall.O_NOFOLLOW|syscall.O_NONBLOCK, 0)
 	switch {
-	case statErr == nil:
-		if info.Mode()&os.ModeSymlink != 0 || !info.Mode().IsRegular() {
-			return false, errors.New("config must be a regular non-symlink file")
+	case openErr == nil:
+		defer file.Close()
+		info, err = file.Stat()
+		if err != nil {
+			return false, err
 		}
-		original, err = os.ReadFile(path)
+		if !info.Mode().IsRegular() {
+			return false, errors.New("config must be a regular file")
+		}
+		original, err = io.ReadAll(file)
 		if err != nil {
 			return false, err
 		}
 		if err = json.Unmarshal(original, &raw); err != nil {
 			return false, err
 		}
-	case errors.Is(statErr, os.ErrNotExist):
+	case errors.Is(openErr, os.ErrNotExist):
 		raw = make(map[string]json.RawMessage)
 	default:
-		return false, statErr
+		return false, openErr
 	}
 	var device map[string]json.RawMessage
 	if b, ok := raw["device"]; ok {
@@ -45,20 +111,11 @@ func UpdateLocalKeyConfig(path, deviceID, localKey string) (changed bool, err er
 	if device == nil {
 		device = make(map[string]json.RawMessage)
 	}
-	var oldID, oldLocal string
-	_ = json.Unmarshal(device["device_id"], &oldID)
-	_ = json.Unmarshal(device["local_key"], &oldLocal)
-	if oldID != "" && oldID != deviceID {
-		return false, fmt.Errorf("config belongs to different device %s", oldID)
+	if raw == nil {
+		return false, errors.New("config must contain a JSON object")
 	}
-	if oldLocal == localKey {
-		return false, nil
-	}
-	setStr := func(field, v string) { b, _ := json.Marshal(v); device[field] = b }
-	setStr("device_id", deviceID)
-	setStr("local_key", localKey)
-	if oldLocal != "" && oldLocal != localKey {
-		setStr("beacon_key", "")
+	if changed, err = update(device); !changed || err != nil {
+		return false, err
 	}
 	db, err := json.Marshal(device)
 	if err != nil {
@@ -70,9 +127,13 @@ func UpdateLocalKeyConfig(path, deviceID, localKey string) (changed bool, err er
 		return false, err
 	}
 	data = append(data, '\n')
-	dir := filepath.Dir(path)
-	if err = os.MkdirAll(dir, 0700); err != nil {
-		return false, err
+	// sudo learn live must leave the private config readable by its original owner.
+	preserveOwner := func(f *os.File) error {
+		if info != nil && os.Geteuid() == 0 {
+			owner := info.Sys().(*syscall.Stat_t)
+			return f.Chown(int(owner.Uid), int(owner.Gid))
+		}
+		return nil
 	}
 	// Backup first; never overwrite a pre-existing backup.
 	if len(original) > 0 {
@@ -81,7 +142,10 @@ func UpdateLocalKeyConfig(path, deviceID, localKey string) (changed bool, err er
 		if e != nil {
 			return false, e
 		}
-		if _, e = f.Write(original); e == nil {
+		if e = preserveOwner(f); e == nil {
+			_, e = f.Write(original)
+		}
+		if e == nil {
 			e = f.Sync()
 		}
 		if c := f.Close(); e == nil {
@@ -96,7 +160,7 @@ func UpdateLocalKeyConfig(path, deviceID, localKey string) (changed bool, err er
 		return false, err
 	}
 	defer os.Remove(tmp.Name())
-	if err = tmp.Chmod(0600); err != nil {
+	if err = preserveOwner(tmp); err != nil {
 		tmp.Close()
 		return false, err
 	}

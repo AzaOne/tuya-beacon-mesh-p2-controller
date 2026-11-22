@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 	"unsafe"
@@ -257,6 +258,21 @@ func runRawHCISendHelper(args []string) error {
 	return h.stop()
 }
 
+func canSendRawHCI() bool {
+	if os.Geteuid() == 0 {
+		return true
+	}
+	status, _ := os.ReadFile("/proc/self/status")
+	for _, line := range strings.Split(string(status), "\n") {
+		if value, ok := strings.CutPrefix(line, "CapEff:"); ok {
+			mask, err := strconv.ParseUint(strings.TrimSpace(value), 16, 64)
+			const capNetRaw = 1 << 13
+			return err == nil && mask&capNetRaw != 0
+		}
+	}
+	return false
+}
+
 func sendAllRawHCI(ctx context.Context, adapter string, frames []p2.WireFrame, dwell, gap, interval time.Duration) error {
 	index, err := ParseAdapterIndex(adapter)
 	if err != nil {
@@ -266,10 +282,12 @@ func sendAllRawHCI(ctx context.Context, adapter string, frames []p2.WireFrame, d
 	if err != nil {
 		return err
 	}
-	if _, err := exec.LookPath("sudo"); err != nil {
-		return fmt.Errorf("sudo required for raw HCI: %w", err)
+	args := []string{"__raw-hci-send", strconv.Itoa(index), strconv.FormatInt(dwell.Milliseconds(), 10), strconv.FormatInt(gap.Milliseconds(), 10), strconv.Itoa(len(frames)), strconv.FormatInt(int64(interval/(625*time.Microsecond)), 10)}
+	if !canSendRawHCI() {
+		args = append([]string{"-n", exe}, args...)
+		exe = "sudo"
 	}
-	cmd := exec.CommandContext(ctx, "sudo", "-n", exe, "__raw-hci-send", strconv.Itoa(index), strconv.FormatInt(dwell.Milliseconds(), 10), strconv.FormatInt(gap.Milliseconds(), 10), strconv.Itoa(len(frames)), strconv.FormatInt(int64(interval/(625*time.Microsecond)), 10))
+	cmd := exec.CommandContext(ctx, exe, args...)
 	var input bytes.Buffer
 	for _, fr := range frames {
 		input.Write(fr.Adv[:])
@@ -278,7 +296,7 @@ func sendAllRawHCI(ctx context.Context, adapter string, frames []p2.WireFrame, d
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("Raw HCI helper: %w (try sudo -v; avoid simultaneous Bluetooth advertising)", err)
+		return fmt.Errorf("Raw HCI helper: %w", err)
 	}
 	return nil
 }

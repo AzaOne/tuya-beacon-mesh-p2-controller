@@ -88,7 +88,7 @@ func serveSession(ctx context.Context, conn net.Conn, addr string, opt Options, 
 	if err := publish(conn, opt.Prefix+"/availability", []byte("online"), true, 0, 0); err != nil {
 		return err
 	}
-	fmt.Printf("MQTT connected: %s; prefix=%s; HA discovery=%v; debounce=%s max_wait=%s\n", addr, opt.Prefix, opt.Discovery, opt.Debounce, opt.MaxWait)
+	fmt.Printf("MQTT connected: %s; prefix=%s; HA discovery=%v; transport=%s adapter=%s; debounce=%s max_wait=%s\n", addr, opt.Prefix, opt.Discovery, opt.Backend, opt.Adapter, opt.Debounce, opt.MaxWait)
 	cache := &snapshotCache{}
 	if err := publishSnapshot(conn, opt, cache); err != nil {
 		return err
@@ -240,6 +240,7 @@ func serveSession(ctx context.Context, conn net.Conn, addr string, opt Options, 
 			queue.complete(result.job, result.err, time.Now())
 			response := map[string]any{"command": result.job.Payload, "topic": result.job.Topic, "ok": result.err == nil, "confirmed": false}
 			if result.err != nil {
+				fmt.Fprintf(os.Stderr, "MQTT command failed on %s (%s/%s): %v\n", result.job.Topic, opt.Backend, opt.Adapter, result.err)
 				response["error"] = result.err.Error()
 			}
 			msg, _ := json.Marshal(response)

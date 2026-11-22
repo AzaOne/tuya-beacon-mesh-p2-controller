@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"example.com/tuya-beacon-mesh-p2-controller/internal/xdg"
 )
 
 type Config struct {
@@ -74,23 +76,5 @@ func DefaultPath() string {
 	if p := os.Getenv("TUYA_P2_CONFIG"); p != "" {
 		return p
 	}
-	const filename = "config.json"
-	paths := []string{filename}
-	if exe, err := os.Executable(); err == nil {
-		if resolved, err := filepath.EvalSymlinks(exe); err == nil {
-			exe = resolved
-		}
-		dir := filepath.Dir(exe)
-		paths = append(paths, filepath.Join(dir, filename), filepath.Join(dir, "tuya-lamp-re-verified.json"), filepath.Join(dir, "tuya-lamp-re.json"))
-	}
-	paths = append(paths, "tuya-lamp-re-verified.json", "tuya-lamp-re.json", "../tuya-lamp-re-verified.json", "../tuya-lamp-re.json")
-	if dir, err := os.UserConfigDir(); err == nil {
-		paths = append(paths, filepath.Join(dir, "tuya-beacon-mesh-p2-controller", "config.json"), filepath.Join(dir, "tuya-p2", "config.json"))
-	}
-	for _, p := range paths {
-		if info, err := os.Stat(p); err == nil && !info.IsDir() {
-			return p
-		}
-	}
-	return filename
+	return filepath.Join(xdg.ConfigDir(), "config.json")
 }

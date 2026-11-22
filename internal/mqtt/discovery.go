@@ -2,6 +2,7 @@ package mqtt
 
 import (
 	"encoding/json"
+	"example.com/tuya-beacon-mesh-p2-controller/internal/version"
 	"fmt"
 	"net"
 	"strings"
@@ -13,7 +14,7 @@ import (
 // These identities are stable across restarts. Each HA light/number references
 // a real controller device, rather than attempting to supply a display string
 // in the via_device field.
-const softwareVersion = "9.3.6"
+var softwareVersion = version.String()
 
 func controllerID(opt Options) string {
 	id := strings.TrimSpace(opt.ClientID)

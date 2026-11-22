@@ -33,6 +33,7 @@ type ControllerSettings struct {
 }
 
 type learnSettings struct {
+	Save    bool   `json:"save"`
 	Out     string `json:"out"`
 	Auto    bool   `json:"auto"`
 	Timeout string `json:"timeout"`
@@ -75,7 +76,7 @@ func Defaults() Config {
 			Transport: "mgmt", AdvInterval: "20ms", MultiDP: true, Frames: 1, Duration: "500ms", Gap: "120ms",
 			Flags: "01", KelvinMin: 2700, KelvinMax: 6500, Scan: true,
 		},
-		Learn: learnSettings{Auto: true, Timeout: "120s"},
+		Learn: learnSettings{Save: true, Auto: true, Timeout: "120s"},
 		QR:    qrSettings{App: "smartlife", Timeout: "4m", Save: true},
 		Cloud: cloudSettings{Region: "eu"},
 		MQTT: mqttSettings{

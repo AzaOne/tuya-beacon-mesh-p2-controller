@@ -163,6 +163,19 @@ func (m *mgmtSocket) add(instance byte, adv []byte) error {
 	return nil
 }
 
+func extendedAdvParams(instance byte, interval time.Duration) []byte {
+	// Linux MGMT ignores the interval fields unless MGMT_ADV_PARAM_INTERVALS is set.
+	const connectable = 1 << 0
+	const intervals = 1 << 14
+	params := make([]byte, 18)
+	params[0] = instance
+	binary.LittleEndian.PutUint32(params[1:5], connectable|intervals)
+	slots := uint32(interval / (625 * time.Microsecond))
+	binary.LittleEndian.PutUint32(params[9:13], slots)
+	binary.LittleEndian.PutUint32(params[13:17], slots)
+	return params
+}
+
 // addFast uses BlueZ MGMT 0x0054/0x0055 and forces a short advertising
 // event interval. The legacy 0x003e operation above does not allow interval
 // selection and may inherit the kernel's ~1.28 second default.
@@ -174,14 +187,7 @@ func (m *mgmtSocket) addFast(instance byte, adv []byte, interval time.Duration) 
 	if interval < 20*time.Millisecond || interval > time.Second || interval%(625*time.Microsecond) != 0 {
 		return errors.New("invalid advertising interval")
 	}
-	slots := uint32(interval / (625 * time.Microsecond))
-	params := make([]byte, 18) // instance + flags + duration + timeout + min/max + txpower
-	params[0] = instance
-	// MGMT flags 1 means connectable and does not inject another AD Flags field.
-	binary.LittleEndian.PutUint32(params[1:5], 1)
-	binary.LittleEndian.PutUint32(params[9:13], slots)
-	binary.LittleEndian.PutUint32(params[13:17], slots)
-	params[17] = 0 // TX power flag is not set, so this value is ignored.
+	params := extendedAdvParams(instance, interval)
 	result, err := m.call(mgmtAddExtendedParams, params)
 	if err != nil {
 		return fmt.Errorf("MGMT Add Extended Advertising Parameters: %w", err)

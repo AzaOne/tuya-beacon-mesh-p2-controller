@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"example.com/tuya-beacon-mesh-p2-controller/internal/config"
 	"example.com/tuya-beacon-mesh-p2-controller/internal/p2"
 	"example.com/tuya-beacon-mesh-p2-controller/internal/testutil"
 )
@@ -37,5 +38,44 @@ func TestLearnSyntheticKnownPlaintext(t *testing.T) {
 	}
 	if err := saveLearnResult(file, got); err == nil {
 		t.Fatal("overwrote existing recovered key")
+	}
+}
+
+func TestFinishLearnSavesConfigAndOptionalExport(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.json")
+	original := `{"device":{"device_id":"lamp","local_key":"abcdefghijklmnop"},"custom":true}`
+	if err := os.WriteFile(path, []byte(original), 0600); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := config.Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	key := learnedKey{BeaconKey: "00112233445566778899aabbccddeeff"}
+	export := filepath.Join(dir, "export.json")
+	if err := finishLearn(path, cfg, key, export, false); err != nil {
+		t.Fatal(err)
+	}
+	if b, err := os.ReadFile(path); err != nil || string(b) != original {
+		t.Fatal("export-only changed config")
+	}
+	if err := finishLearn(path, cfg, key, "", true); err != nil {
+		t.Fatal(err)
+	}
+	updated, err := config.Load(path)
+	if err != nil || updated.Device.BeaconKey != key.BeaconKey || updated.Device.LocalKey != cfg.Device.LocalKey {
+		t.Fatal("config key update failed")
+	}
+	if err := finishLearn(path, cfg, key, "", true); err != nil {
+		t.Fatal(err)
+	}
+	backups, err := filepath.Glob(path + ".bak-*")
+	if err != nil || len(backups) != 1 {
+		t.Fatal("expected exactly one config backup")
+	}
+	cfg.Device.LocalKey = "ABCDEFGHIJKLMNOP"
+	if err := finishLearn(path, cfg, key, "", true); err == nil {
+		t.Fatal("accepted key learned for a different pairing")
 	}
 }

@@ -29,6 +29,7 @@
     "adv_interval": "20ms"
   },
   "learn": {
+    "save": true,
     "out": "",
     "auto": true,
     "timeout": "120s"

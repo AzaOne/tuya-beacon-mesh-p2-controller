@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"example.com/tuya-beacon-mesh-p2-controller/internal/version"
 	"fmt"
 	"os"
 	"os/signal"
@@ -12,6 +13,10 @@ import (
 )
 
 func run(args []string) error {
+	if len(args) == 1 && (args[0] == "-version" || args[0] == "--version") {
+		fmt.Println(version.String())
+		return nil
+	}
 	if handled, err := bluez.DispatchHelper(args); handled {
 		return err
 	}

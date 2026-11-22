@@ -74,7 +74,10 @@ func TestSeqWrapRejected(t *testing.T) {
 }
 
 func TestDefaultStatePath(t *testing.T) {
-	for id, want := range map[string]string{"device9": "state/state-device9.json", "../../": "state/state-lamp.json"} {
+	base := t.TempDir()
+	t.Setenv("XDG_STATE_HOME", base)
+	for id, name := range map[string]string{"device9": "state-device9.json", "../../": "state-lamp.json"} {
+		want := filepath.Join(base, "tuya-beacon-mesh-p2-controller", name)
 		if got := DefaultStatePath(id); got != want {
 			t.Errorf("DefaultStatePath(%q) = %q, want %q", id, got, want)
 		}

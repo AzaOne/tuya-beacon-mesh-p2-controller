@@ -107,7 +107,7 @@ func saveLearnResult(path string, v learnedKey) error {
 	return f.Sync()
 }
 
-func LearnFromCapture(cfgPath, capturePath, output string, src, dst uint16, autoAddress bool) error {
+func LearnFromCapture(cfgPath, capturePath, output string, src, dst uint16, autoAddress, save bool) error {
 	b, err := os.ReadFile(cfgPath)
 	if err != nil {
 		return err
@@ -128,13 +128,27 @@ func LearnFromCapture(cfgPath, capturePath, output string, src, dst uint16, auto
 	if err != nil {
 		return err
 	}
-	if output == "" {
-		fmt.Printf("Validated %d frames across %d distinct DPs; use -learn-out <path> to save recovered beacon_key securely.\n", result.VerifiedFrames, result.DistinctDPs)
-		return nil
+	return finishLearn(cfgPath, c, result, output, save)
+}
+
+func finishLearn(path string, cfg config.Config, result learnedKey, output string, save bool) error {
+	fmt.Printf("Verified %d frames across %d distinct DPs (src=%s dst=%s).\n", result.VerifiedFrames, result.DistinctDPs, result.Source, result.Destination)
+	if save {
+		changed, err := config.UpdateBeaconKeyConfig(path, cfg.Device.DeviceID, cfg.Device.LocalKey, result.BeaconKey)
+		if err != nil {
+			return fmt.Errorf("save beacon_key in config: %w", err)
+		}
+		if changed {
+			fmt.Printf("Saved device.beacon_key in %s\n", path)
+		} else {
+			fmt.Printf("device.beacon_key already matches in %s\n", path)
+		}
 	}
-	if err = saveLearnResult(output, result); err != nil {
-		return err
+	if output != "" {
+		if err := saveLearnResult(output, result); err != nil {
+			return fmt.Errorf("export learned key: %w", err)
+		}
+		fmt.Printf("Exported learned key to %s\n", output)
 	}
-	fmt.Printf("Recovered beacon_key confirmed by %d frames and %d distinct DP payloads; saved (0600) to %s\n", result.VerifiedFrames, result.DistinctDPs, output)
 	return nil
 }

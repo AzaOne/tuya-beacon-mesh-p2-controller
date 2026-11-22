@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-// Exercise actual flag parsing, working-directory state and signal handling.
+// Exercise actual flag parsing, XDG defaults and signal handling.
 func TestEntrypoints(t *testing.T) {
 	dir := t.TempDir()
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
@@ -25,7 +25,12 @@ func TestEntrypoints(t *testing.T) {
 	}
 	cli, server := filepath.Join(dir, "tuya-beacon-mesh-p2-controller"), filepath.Join(dir, "tuya-beacon-mesh-p2-controller-server")
 	workDir := t.TempDir()
-	cfg := filepath.Join(workDir, "config.json")
+	configHome := t.TempDir()
+	appName := "tuya-beacon-mesh-p2-controller"
+	cfg := filepath.Join(configHome, appName, "config.json")
+	if err := os.Mkdir(filepath.Dir(cfg), 0700); err != nil {
+		t.Fatal(err)
+	}
 	write := func(path, body string) {
 		t.Helper()
 		if err := os.WriteFile(path, []byte(body), 0600); err != nil {
@@ -43,8 +48,8 @@ func TestEntrypoints(t *testing.T) {
 	}
 	t.Setenv("TUYA_BEACON_MESH_P2_CONTROLLER_CONFIG", "")
 	t.Setenv("TUYA_P2_CONFIG", "")
-	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
-	check(server, "open config.json:", false)
+	t.Setenv("XDG_CONFIG_HOME", configHome)
+	check(server, "open "+cfg+":", false)
 	write(filepath.Join(dir, "tuya-lamp-re-verified.json"), "{}")
 	t.Setenv("XDG_STATE_HOME", filepath.Join(dir, "legacy"))
 	write(cfg, "{")
@@ -68,7 +73,7 @@ func TestEntrypoints(t *testing.T) {
 	check(cli, "last=0x009A", true, "-state", filepath.Join(workDir, "state-lamp.json"), "seq", "sync", "0x9a")
 	check(cli, "last=0x009F", true, "-state", filepath.Join(dir, "state-lamp.json"), "seq", "sync", "0x9f")
 	check(cli, "last=0x009F", true, "seq", "show")
-	if _, err := os.Stat(filepath.Join(workDir, "state", "state-lamp.json")); err != nil {
+	if _, err := os.Stat(filepath.Join(os.Getenv("XDG_STATE_HOME"), appName, "state-lamp.json")); err != nil {
 		t.Fatal(err)
 	}
 	check(cli, "last=0x00A0", true, "seq", "sync", "0xa0")
