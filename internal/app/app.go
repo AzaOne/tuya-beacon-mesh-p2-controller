@@ -33,13 +33,6 @@ func newDevice(c config.Config, configPath, statePath string, o controller.Optio
 	fp := state.Fingerprint(c.Device.DeviceID, o.Src, o.Dst, k1, k2)
 	if statePath == "" {
 		statePath = state.DefaultStatePath(c.Device.DeviceID)
-		migrated, err := state.MigrateLegacyState(statePath, c.Device.DeviceID, fp)
-		if err != nil {
-			return Device{}, err
-		}
-		if migrated {
-			fmt.Fprintf(os.Stderr, "Imported previous device state to %s\n", statePath)
-		}
 	}
 
 	lamp := controller.Controller{

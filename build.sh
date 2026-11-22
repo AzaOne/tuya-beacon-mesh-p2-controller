@@ -13,7 +13,7 @@ go mod verify
 go vet ./...
 CGO_ENABLED=1 go test -race ./...
 
-version=$(git describe --tags --long --always --dirty 2>/dev/null || echo dev)
+version=$(git describe --tags --match '[0-9]*.[0-9]*.[0-9]*' --long --always --dirty 2>/dev/null || echo dev)
 mkdir -p build
 for arch in amd64 arm64; do
   for command in tuya-beacon-mesh-p2-controller tuya-beacon-mesh-p2-controller-server; do

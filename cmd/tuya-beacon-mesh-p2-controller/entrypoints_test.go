@@ -69,13 +69,23 @@ func TestEntrypoints(t *testing.T) {
 	check(cli, "last=0x008E", true, "seq", "show")
 	check(cli, "seq=0x008F", true, "-dry-run", "on")
 	check(cli, "last=0x008E", true, "seq", "show")
-	// The two former locations can have different sequence counters.
-	check(cli, "last=0x009A", true, "-state", filepath.Join(workDir, "state-lamp.json"), "seq", "sync", "0x9a")
-	check(cli, "last=0x009F", true, "-state", filepath.Join(dir, "state-lamp.json"), "seq", "sync", "0x9f")
-	check(cli, "last=0x009F", true, "seq", "show")
-	if _, err := os.Stat(filepath.Join(os.Getenv("XDG_STATE_HOME"), appName, "state-lamp.json")); err != nil {
+	// Local config and state take precedence together, for both entrypoints.
+	localCfg := filepath.Join(workDir, "config.json")
+	write(localCfg, `{"mqtt":{"enabled":false},"device":{"device_id":"portable","local_key":"abcdefghijklmnop","beacon_key":"pqrstuvwxyz12345"}}`)
+	check(cli, "state-lamp.json", true, "seq", "show")
+	if err := os.Mkdir(filepath.Join(workDir, "state"), 0700); err != nil {
 		t.Fatal(err)
 	}
+	check(server, "no enabled services", false)
+	check(cli, "last=0x009F", true, "seq", "sync", "0x9f")
+	if _, err := os.Stat(filepath.Join(workDir, "state", "state-portable.json")); err != nil {
+		t.Fatal(err)
+	}
+	check(cli, "last=0x008E", true, "-config", cfg, "-state", filepath.Join(os.Getenv("XDG_STATE_HOME"), appName, "state-lamp.json"), "seq", "show")
+	if err := os.Remove(localCfg); err != nil {
+		t.Fatal(err)
+	}
+	check(cli, "state-lamp.json", true, "seq", "show")
 	check(cli, "last=0x00A0", true, "seq", "sync", "0xa0")
 	check(cli, `"last_reserved": 160`, true, "state", "show")
 	invalid := filepath.Join(dir, "invalid.json")

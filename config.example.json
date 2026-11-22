@@ -14,7 +14,7 @@
     "src": "0x7a59",
     "phone_src": "0x7a59",
     "dst": "0x0003",
-    "transport": "mgmt",
+    "transport": "raw-hci",
     "multi_dp": true,
     "frames": 1,
     "duration": "500ms",

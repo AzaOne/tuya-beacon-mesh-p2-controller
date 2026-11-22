@@ -138,90 +138,11 @@ func CleanDeviceID(deviceID string) string {
 }
 
 func DefaultStatePath(deviceID string) string {
-	return filepath.Join(xdg.StateDir(), "state-"+CleanDeviceID(deviceID)+".json")
-}
-
-// Old v2 location, used solely to import the latest seq when upgrading.
-func legacyStatePath(deviceID string) (string, error) {
-	base := os.Getenv("XDG_STATE_HOME")
-	if !filepath.IsAbs(base) {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return "", err
-		}
-		base = filepath.Join(home, ".local", "state")
+	dir := xdg.StateDir()
+	if xdg.LocalStorage() {
+		dir = "state"
 	}
-	return filepath.Join(base, "tuya-p2", CleanDeviceID(deviceID)+".json"), nil
-}
-
-// MigrateLegacyState imports the complete snapshot once. Installations may
-// have run binaries from both the working directory and build/.
-func MigrateLegacyState(newPath, device, fp string) (bool, error) {
-	if _, err := os.Stat(newPath); err == nil {
-		return false, nil
-	} else if !errors.Is(err, os.ErrNotExist) {
-		return false, err
-	}
-	name := filepath.Base(DefaultStatePath(device))
-	paths := []string{name, filepath.Join("state", name)}
-	exe, err := os.Executable()
-	if err != nil {
-		return false, err
-	}
-	if resolved, err := filepath.EvalSymlinks(exe); err == nil {
-		exe = resolved
-	}
-	paths = append(paths, filepath.Join(filepath.Dir(exe), name))
-	var best *Snapshot
-	for _, path := range paths {
-		snapshot, err := previousSnapshot(path, device, fp)
-		if err != nil {
-			return false, err
-		}
-		if snapshot != nil && (best == nil || snapshot.LastReserved > best.LastReserved) {
-			best = snapshot
-		}
-	}
-	// XDG was superseded by the executable-relative store in earlier releases.
-	if best == nil {
-		path, err := legacyStatePath(device)
-		if err != nil {
-			return false, err
-		}
-		best, err = previousSnapshot(path, device, fp)
-		if err != nil {
-			return false, err
-		}
-	}
-	if best == nil {
-		return false, nil
-	}
-	store, err := Open(newPath, device, fp)
-	if err != nil {
-		return false, err
-	}
-	defer store.Close()
-	if !store.FirstRun {
-		return false, nil
-	}
-	store.State = *best
-	if err := store.Write(); err != nil {
-		return false, fmt.Errorf("migrate previous state: %w", err)
-	}
-	return true, nil
-}
-
-func previousSnapshot(path, device, fp string) (*Snapshot, error) {
-	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
-		return nil, nil
-	} else if err != nil {
-		return nil, err
-	}
-	snapshot, err := Read(path, device, fp)
-	if err != nil {
-		return nil, fmt.Errorf("read previous state %s: %w", path, err)
-	}
-	return &snapshot, nil
+	return filepath.Join(dir, "state-"+CleanDeviceID(deviceID)+".json")
 }
 
 func Open(path, device, fp string) (*Store, error) {

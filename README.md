@@ -21,7 +21,7 @@ Run from the repository root on the target Linux machine. The build script check
 ./install.sh
 ```
 
-Both binaries accept `--version` to print the Git build identifier (tag, commit distance, and abbreviated hash for tagged history). MQTT bridge metadata uses the same identifier.
+Releases use `MAJOR.MINOR.PATCH` tags (for example, `1.0.0`). Bump the major version for incompatible CLI, configuration, or MQTT changes, minor for compatible features, and patch for fixes. Tag the tested release commit before pushing. Untagged history builds with the abbreviated commit hash. Both binaries accept `--version` to print the Git build identifier (tag, commit distance, and abbreviated hash for tagged history). MQTT bridge metadata uses the same identifier.
 
 The installer puts both binaries in `~/.local/bin`. Include that directory in your `PATH` to run the commands below.
 
@@ -35,15 +35,15 @@ install -d -m 0700 "$configdir"
 test -e "$configdir/config.json" || install -m 0600 config.example.json "$configdir/config.json"
 ```
 
-Set `device.device_id`, `device.local_key`, and `device.beacon_key` for your lamp. Check the mesh addresses in `controller.src`, `phone_src`, and `dst`. For the systemd setup below, set `controller.transport` to `raw-hci` and select your Bluetooth adapter in `controller.adapter`. The other supported transports are `mgmt` (default), `mgmt-legacy`, and `btmgmt`. [Full configuration example](config.example.json)
+Set `device.device_id`, `device.local_key`, and `device.beacon_key` for your lamp. Check the mesh addresses in `controller.src`, `phone_src`, and `dst`. The example selects `raw-hci` for the user service. Set `mqtt.broker` if your broker runs on another host (default `tcp://localhost:1883`) and select your Bluetooth adapter in `controller.adapter`. The other supported transports are `mgmt` (default), `mgmt-legacy`, and `btmgmt`. [Full configuration example](config.example.json)
 
-Both binaries use `$XDG_CONFIG_HOME/tuya-beacon-mesh-p2-controller/config.json` and `$XDG_STATE_HOME/tuya-beacon-mesh-p2-controller/state-<device-id>.json`. The base directories default to `~/.config` and `~/.local/state`. Override the config with `TUYA_BEACON_MESH_P2_CONTROLLER_CONFIG` or `-config`, and the state file with `controller.state` or `-state`. [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir/latest/)
+When the working directory contains both `config.json` and a `state/` directory, both binaries use those local files. Otherwise they use `$XDG_CONFIG_HOME/tuya-beacon-mesh-p2-controller/config.json` and `$XDG_STATE_HOME/tuya-beacon-mesh-p2-controller/state-<device-id>.json`. The base directories default to `~/.config` and `~/.local/state`. Override the config with `TUYA_BEACON_MESH_P2_CONTROLLER_CONFIG` or `-config`, and the state file with `controller.state` or `-state`. [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir/latest/)
 
 **Upgrading:** Stop any previously installed system service or manually started controller before migrating. Run `./install.sh --migrate` to install and move existing configs and snapshots from the project directory, preserving sequence numbers. The installer stops its own service first. A plain `./install.sh` skips migration. For a snapshot created under `sudo`, it may prompt for permission to read the old file. The migrated copy belongs to the login user with mode `0600`. Conflicting destination files require manual reconciliation. To move only the data, stop the user service too and run `./install.sh --migrate-only`. If you have an explicit relative `controller.state`, set it to the absolute path of your existing snapshot before restarting.
 
 ### Obtain the keys
 
-If you already have both keys, continue to Usage. Otherwise, set `device.device_id` in your XDG config and run these commands as your login user. Both commands update that config by default. Run `sudo -v` separately to authorize the Bluetooth helper.
+If you already have both keys, continue to Usage. Otherwise, set `device.device_id` in the selected config and run these commands as your login user. Both commands update that config by default. Run `sudo -v` separately to authorize the Bluetooth helper.
 
 ```sh
 tuya-beacon-mesh-p2-controller login

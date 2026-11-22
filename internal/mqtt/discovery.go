@@ -62,9 +62,6 @@ func bridgeDevicesJSON(opt Options) ([]byte, error) {
 	if product == "" {
 		product = strings.TrimSpace(opt.Hardware)
 	}
-	if product == "" && opt.DeviceID == "test-lamp" {
-		product = "wbl39qpt"
-	}
 	return json.Marshal([]map[string]any{{
 		"id": opt.DeviceID, "friendly_name": fmt.Sprintf("Smart bulb (%s)", opt.DeviceID),
 		"manufacturer": "Tuya", "product_id": product, "type": "Beacon P2 light",
@@ -219,22 +216,12 @@ func deviceMetadata(opt Options) map[string]any {
 	if hardware == "" {
 		hardware = strings.TrimSpace(opt.Hardware)
 	}
-	// Backward-compatible metadata for the specific lamp previously identified
-	// through the owner's Tuya Cloud API. Other products must configure these.
-	if opt.DeviceID == "test-lamp" {
-		if firmware == "" {
-			firmware = "1.2"
-		}
-		if hardware == "" {
-			hardware = "wbl39qpt"
-		}
-	}
 	// Present the same descriptive model line as Zigbee2MQTT, while leaving
 	// the Tuya Product ID in Hardware as requested. A custom device.model
 	// overrides the human-friendly description, not the actual Product ID.
 	model := strings.TrimSpace(opt.DeviceModel)
-	if model == "" && opt.DeviceID == "test-lamp" {
-		model = "Smart Bulb 2 (Tuya Beacon Mesh P2)"
+	if model == "" && hardware == "wbl39qpt" {
+		model = "Smart Bulb (Tuya Beacon Mesh P2)"
 	}
 	if model != "" {
 		if hardware != "" && !strings.Contains(model, "("+hardware+")") {

@@ -37,7 +37,7 @@ Monitoring, recovery, automation:
 
 Options BEFORE command:
   -config FILE         JSON containing device.local_key + beacon_key
-  -state FILE          state JSON; default $XDG_STATE_HOME/tuya-beacon-mesh-p2-controller/state-<device-id>.json
+  -state FILE          state JSON; default to local state/ with config.json present, otherwise XDG state
   -adapter hci0        Bluetooth adapter
   -src 0x7a59          local logical transmitter source, experimental alternatives
   -phone-src 0x7a59    source of Smart Life commands, for monitor/sync/learn

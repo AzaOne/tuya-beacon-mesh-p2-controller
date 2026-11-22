@@ -12,7 +12,7 @@ import (
 
 func TestTuyaDeviceMetadataAndBridge(t *testing.T) {
 	opt := Options{
-		DeviceID: "test-lamp", DeviceName: "Smart Bulb 2",
+		DeviceID: "test-lamp", DeviceName: "Smart Bulb 2", ProductID: "wbl39qpt", Firmware: "1.2",
 		ClientID: "tuya-beacon-mesh-p2-controller", Prefix: "tuya-beacon-mesh-p2-controller/test-lamp",
 		DiscoveryPrefix: "homeassistant", KelvinMin: 2700, KelvinMax: 6500,
 	}
@@ -73,7 +73,7 @@ func TestTuyaDeviceMetadataAndBridge(t *testing.T) {
 		if result["availability_topic"] != "tuya-beacon-mesh-p2-controller/bridge/state" || result["availability_template"] != "{{ value_json.state }}" {
 			t.Errorf("child availability not linked to bridge: %v", result)
 		}
-		if got := dev["model"]; got != "Smart Bulb 2 (Tuya Beacon Mesh P2) (wbl39qpt)" {
+		if got := dev["model"]; got != "Smart Bulb (Tuya Beacon Mesh P2) (wbl39qpt)" {
 			t.Errorf("unexpected model text: %v", got)
 		}
 		if !reflect.DeepEqual(dev["identifiers"], []any{"tuya_p2_test-lamp"}) {

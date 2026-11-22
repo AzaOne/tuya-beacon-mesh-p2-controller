@@ -62,22 +62,18 @@ publish_file() (
 )
 
 migrate_data() {
-    local olddir snapshot i
+    local snapshot i
     local -a sources=() targets=()
     install -d -m 0700 "$configdir" "$statedir"
-    for olddir in "$PWD"; do
-        for snapshot in "$olddir"/state/state-*.json "$olddir"/state-*.json; do
-            [[ -f $snapshot ]] || continue
-            sources+=("$snapshot")
-            targets+=("$statedir/${snapshot##*/}")
-        done
+    for snapshot in "$PWD"/state/state-*.json "$PWD"/state-*.json; do
+        [[ -f $snapshot ]] || continue
+        sources+=("$snapshot")
+        targets+=("$statedir/${snapshot##*/}")
     done
-    for olddir in "$PWD"; do
-        if [[ -f $olddir/config.json ]]; then
-            sources+=("$olddir/config.json")
-            targets+=("$configdir/config.json")
-        fi
-    done
+    if [[ -f config.json ]]; then
+        sources+=("$PWD/config.json")
+        targets+=("$configdir/config.json")
+    fi
     # Keep every original until all snapshots and configs have been published.
     for i in "${!sources[@]}"; do
         publish_file "${sources[i]}" "${targets[i]}"

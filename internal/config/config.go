@@ -76,5 +76,8 @@ func DefaultPath() string {
 	if p := os.Getenv("TUYA_P2_CONFIG"); p != "" {
 		return p
 	}
+	if xdg.LocalStorage() {
+		return "config.json"
+	}
 	return filepath.Join(xdg.ConfigDir(), "config.json")
 }
