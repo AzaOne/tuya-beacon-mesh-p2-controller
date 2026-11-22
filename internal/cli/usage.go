@@ -91,5 +91,4 @@ Examples:
 
 All radio commands are optimistic: neither MGMT nor BLE Advertising provides
 an acknowledgment that the lamp applied them. Keep secrets and state private.
-See PROTOKOL.md for the 26-byte frame format and both-key XXTEA/XOR scheme.
 `
