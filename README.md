@@ -43,16 +43,17 @@ Both binaries use `$XDG_CONFIG_HOME/tuya-beacon-mesh-p2-controller/config.json` 
 
 ### Obtain the keys
 
-If you already have both keys, continue to Usage. Otherwise, set the device ID and run the CLI:
+If you already have both keys, continue to Usage. Otherwise, set `device.device_id` in your XDG config and run these commands as your login user. Both commands update that config by default. Run `sudo -v` separately to authorize the Bluetooth helper.
 
 ```sh
 tuya-beacon-mesh-p2-controller login
-sudo -v tuya-beacon-mesh-p2-controller learn live
+sudo -v
+tuya-beacon-mesh-p2-controller learn live
 ```
 
 1. For `login`, get your User Code from **Smart Life → Me → Settings → Account and Security**. Scan the displayed QR code with the app and confirm. The CLI saves the local key to the config. Install `qrencode` to display the QR in the terminal. Tuya OpenAPI credentials can also be used with `-cloud-save cloud local-key` and the environment variables `TUYA_CLIENT_ID` and `TUYA_CLIENT_SECRET`.
 2. During `learn live`, switch the lamp off and on in Smart Life with the phone near the adapter. Live scanning uses BlueZ's `btmgmt`. Alternatively, use `learn capture.cfa` with an Android Bluetooth capture.
-3. Both commands save the verified key to `device.beacon_key` in the selected config and back up the previous config when the key changes. Use `-learn-out beacon-key.json` for an additional private export, or `-learn-save=false` to skip the config update. Check the reported source and destination against your config. Repeat key recovery if you pair the lamp again.
+3. Both learning modes save the verified beacon key to `device.beacon_key` in the selected config and back up the previous config when the key changes. Use `-learn-out beacon-key.json` for an additional private export, or `-learn-save=false` to skip the config update. Check the reported source and destination against your config. Repeat key recovery if you pair the lamp again.
 
 ## Usage
 
@@ -114,3 +115,7 @@ Check the journal for `MQTT connected` with `transport=raw-hci`. Send a command 
 ## Acknowledgments
 
 Thanks to [oLucasAguilar](https://github.com/oLucasAguilar), whose work taught me that the lamp protocol uses `beacon_key` as a 16-byte XOR mask applied after XXTEA encryption. I also used the project as a reference for the 20 ms BLE advertising interval and device discovery during Smart Life login. [tuya-beacon-linux](https://github.com/oLucasAguilar/tuya-beacon-linux)
+
+## License
+
+Copyright (c) 2026 AzaOne. Licensed under the [MIT License](./LICENSE).
