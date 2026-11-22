@@ -2,8 +2,10 @@
 set -euo pipefail
 
 usage() {
-    echo "Usage: ./install.sh [--user] [--migrate-only]"
-    echo "Install the CLI and raw-hci MQTT user service. Existing config and state move to their XDG directories."
+    echo "Usage: ./install.sh [--user] [--migrate | --migrate-only]"
+    echo "Install the CLI and raw-hci MQTT user service."
+    echo "  --migrate       Move legacy config and state into XDG directories during installation."
+    echo "  --migrate-only  Move the data and exit."
 }
 
 case "${1:-}" in
@@ -12,7 +14,7 @@ esac
 if [[ ${1:-} == --user ]]; then
     shift
 fi
-if [[ $# -gt 1 || ( $# == 1 && $1 != --migrate-only ) ]]; then
+if [[ $# -gt 1 || ( $# == 1 && $1 != --migrate && $1 != --migrate-only ) ]]; then
     usage >&2
     exit 2
 fi
@@ -111,7 +113,9 @@ sudo setcap cap_net_raw=ep "$stage/$name-server"
 if systemctl --user is-active --quiet "$name.service"; then
     systemctl --user stop "$name.service"
 fi
-migrate_data
+if [[ ${1:-} == --migrate ]]; then
+    migrate_data
+fi
 mv -fT -- "$stage/$name" "$bindir/$name"
 mv -fT -- "$stage/$name-server" "$bindir/$name-server"
 

@@ -1,7 +1,7 @@
 {
   "device": {
-    "name": "Smart bulb",
-    "model": "Smart Bulb 2 (Tuya Beacon Mesh P2)",
+    "name": "Smart Bulb",
+    "model": "Smart Bulb (Tuya Beacon Mesh P2)",
     "firmware": "1.2",
     "product_id": "wbl39qpt",
     "device_id": "YOUR_DEVICE_ID",
