@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"example.com/tuya-beacon-mesh-p2-controller/internal/version"
 	"fmt"
 	"os"
 	"os/signal"
@@ -10,10 +9,11 @@ import (
 
 	"example.com/tuya-beacon-mesh-p2-controller/internal/bluez"
 	"example.com/tuya-beacon-mesh-p2-controller/internal/cli"
+	"example.com/tuya-beacon-mesh-p2-controller/internal/version"
 )
 
 func run(args []string) error {
-	if len(args) == 1 && (args[0] == "-version" || args[0] == "--version") {
+	if len(args) == 1 && args[0] == "--version" {
 		fmt.Println(version.String())
 		return nil
 	}

@@ -53,7 +53,7 @@ func recoverKeyAuto(frames [][]byte, k1 []byte, preferredSrc, preferredDst uint1
 		return learnedKey{}, errors.New("no cryptographically verified ON/OFF pair yet")
 	}
 	if ambiguous {
-		return learnedKey{}, errors.New("multiple matching devices with equal confidence; set -learn-auto=false -phone-src/-dst")
+		return learnedKey{}, errors.New("multiple matching devices with equal confidence; set --learn-auto=false --phone-src/--dst")
 	}
 	return best, nil
 }

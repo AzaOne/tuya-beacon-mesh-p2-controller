@@ -118,18 +118,15 @@ func read(path string, optional bool) (Config, error) {
 	return c, nil
 }
 
-// The -config option must be discoverable before the rest of the FlagSet is
+// The --config option must be discoverable before the rest of the FlagSet is
 // constructed. Standard Go flags are only accepted before the command.
 func PathFromArgs(args []string) string {
 	fallback := DefaultPath()
 	for i, arg := range args {
-		if arg == "-config" || arg == "--config" {
+		if arg == "--config" {
 			if i+1 < len(args) {
 				return args[i+1]
 			}
-		}
-		if strings.HasPrefix(arg, "-config=") {
-			return strings.TrimPrefix(arg, "-config=")
 		}
 		if strings.HasPrefix(arg, "--config=") {
 			return strings.TrimPrefix(arg, "--config=")

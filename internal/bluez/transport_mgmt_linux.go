@@ -315,7 +315,7 @@ func sendAllMGMT(ctx context.Context, adapter string, frames []p2.WireFrame, dwe
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("BlueZ MGMT helper: %w (try sudo -v or -transport btmgmt)", err)
+		return fmt.Errorf("BlueZ MGMT helper: %w (try sudo -v or --transport btmgmt)", err)
 	}
 	return nil
 }

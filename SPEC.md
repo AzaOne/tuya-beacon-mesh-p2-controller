@@ -84,7 +84,7 @@ BLE ADV (31)       02 01 01 1B 03 0B 7D F9 00 05 12 34 05 33
                    EA 17 C6 A5 73 42 6C 64 2B AB 62 66 A6 47 9C 3F F6
 ```
 
-Here `33` checks the plaintext block and `F6` checks the adjusted header and unmasked ciphertext. To inspect the bytes for your own configuration, use `-dry-run on`. It prints the P2 frame as `frame=` and the complete advertising data as `adv=` without advancing the sequence counter.
+Here `33` checks the plaintext block and `F6` checks the adjusted header and unmasked ciphertext. To inspect the bytes for your own configuration, use `--dry-run on`. It prints the P2 frame as `frame=` and the complete advertising data as `adv=` without advancing the sequence counter.
 
 ## Receiving commands and tracking state
 

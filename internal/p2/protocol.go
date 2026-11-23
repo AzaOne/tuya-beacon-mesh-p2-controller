@@ -477,7 +477,7 @@ func BuildFrame(src, dst, seq uint16, cmd DPCommand, k1, k2 []byte, flagByte byt
 		return out, errors.New("both keys must be 16 bytes")
 	}
 	if flagByte != 1 && flagByte != 2 && flagByte != 6 {
-		return out, errors.New("-flags must be 01, 02 or 06")
+		return out, errors.New("--flags must be 01, 02 or 06")
 	}
 	f := &out.Frame
 	f[0] = 0x0b

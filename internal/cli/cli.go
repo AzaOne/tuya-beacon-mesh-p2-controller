@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"example.com/tuya-beacon-mesh-p2-controller/internal/app"
+	"example.com/tuya-beacon-mesh-p2-controller/internal/cliargs"
 	"example.com/tuya-beacon-mesh-p2-controller/internal/config"
 	"example.com/tuya-beacon-mesh-p2-controller/internal/monitor"
 	"example.com/tuya-beacon-mesh-p2-controller/internal/p2"
@@ -78,7 +79,7 @@ func Run(ctx context.Context, argv []string) error {
 		fs.Usage()
 		return nil
 	}
-	if err := fs.Parse(argv); err != nil {
+	if err := cliargs.Parse(fs, argv); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			return nil
 		}
@@ -101,26 +102,26 @@ func Run(ctx context.Context, argv []string) error {
 	}
 	if action == "login" {
 		if len(args) != 1 {
-			return errors.New("usage: tuya-beacon-mesh-p2-controller [-qr-user-code CODE] [-qr-save=true] login")
+			return errors.New("usage: tuya-beacon-mesh-p2-controller [--qr-user-code CODE] [--qr-save=true] login")
 		}
 		if *qrTimeout < 30*time.Second || *qrTimeout > 10*time.Minute {
-			return errors.New("-qr-timeout must be 30s..10m")
+			return errors.New("--qr-timeout must be 30s..10m")
 		}
 		return provision.RunQRLocalKey(ctx, *cfgPath, *cloudDeviceID, *qrUserCode, *qrApp, *qrTimeout, *qrSave)
 	}
 	if action == "cloud" {
 		if len(args) != 2 || args[1] != "local-key" {
-			return errors.New("usage: tuya-beacon-mesh-p2-controller [-cloud-region eu|we] [-cloud-save] cloud local-key")
+			return errors.New("usage: tuya-beacon-mesh-p2-controller [--cloud-region eu|we] [--cloud-save] cloud local-key")
 		}
 		return provision.RunCloudLocalKey(ctx, *cfgPath, *cloudDeviceID, *cloudRegion, *cloudSave)
 	}
 	if action == "learn" {
 		if len(args) != 2 {
-			return errors.New("usage: tuya-beacon-mesh-p2-controller -learn-out beacon-key.json learn live|capture.cfa")
+			return errors.New("usage: tuya-beacon-mesh-p2-controller --learn-out beacon-key.json learn live|capture.cfa")
 		}
 		if args[1] == "live" {
 			if *learnTimeout < 5*time.Second || *learnTimeout > 30*time.Minute {
-				return errors.New("-learn-timeout must be 5s..30m")
+				return errors.New("--learn-timeout must be 5s..30m")
 			}
 			return provision.LearnLive(ctx, *cfgPath, *learnOut, radio.Adapter, options.PhoneSrc, options.Dst, *learnAuto, *scan, *learnSave, *learnTimeout)
 		}
@@ -139,7 +140,7 @@ func Run(ctx context.Context, argv []string) error {
 			return errors.New("usage: tuya-beacon-mesh-p2-controller [options] monitor")
 		}
 		if radio.DryRun {
-			return errors.New("-dry-run does not apply to monitor")
+			return errors.New("--dry-run does not apply to monitor")
 		}
 		if _, err := lamp.Snapshot(); err != nil {
 			return err

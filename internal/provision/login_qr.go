@@ -352,14 +352,14 @@ func readConfiguredDeviceID(path, override string) (string, error) {
 	}
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return "", fmt.Errorf("read device ID from %s: %w (or pass -cloud-device-id)", path, err)
+		return "", fmt.Errorf("read device ID from %s: %w (or pass --cloud-device-id)", path, err)
 	}
 	var cfg config.Config
 	if err := json.Unmarshal(data, &cfg); err != nil {
 		return "", err
 	}
 	if cfg.Device.DeviceID == "" {
-		return "", errors.New("config lacks device.device_id; set -cloud-device-id")
+		return "", errors.New("config lacks device.device_id; set --cloud-device-id")
 	}
 	return cfg.Device.DeviceID, nil
 }
@@ -372,7 +372,7 @@ func RunQRLocalKey(ctx context.Context, configPath, deviceID, userCode, app stri
 	switch app {
 	case "smartlife", "tuyaSmart":
 	default:
-		return errors.New("-qr-app must be smartlife|tuyaSmart")
+		return errors.New("--qr-app must be smartlife|tuyaSmart")
 	}
 	// Obtain user code without requesting a password or developer credentials.
 	if strings.TrimSpace(userCode) == "" {
@@ -429,7 +429,7 @@ func RunQRLocalKey(ctx context.Context, configPath, deviceID, userCode, app stri
 		return err
 	}
 	if !save {
-		fmt.Printf("Successfully obtained a valid local_key for %s (%d characters). Use -qr-save=true to store it in your config.\n", deviceID, len(key))
+		fmt.Printf("Successfully obtained a valid local_key for %s (%d characters). Use --qr-save=true to store it in your config.\n", deviceID, len(key))
 		return nil
 	}
 	// Do not follow symlinks for the config; update routine backs it up on change.

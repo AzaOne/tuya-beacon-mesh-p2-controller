@@ -67,16 +67,16 @@ func (d Device) StartBridge(ctx context.Context, opt mqtt.Options, passwordEnv s
 		opt.Password = os.Getenv(passwordEnv)
 	}
 	if opt.Debounce < 0 || opt.Debounce > 5*time.Second {
-		return errors.New("-mqtt-debounce must be 0..5s")
+		return errors.New("--mqtt-debounce must be 0..5s")
 	}
 	if opt.MaxWait < opt.Debounce || opt.MaxWait > 10*time.Second {
-		return errors.New("-mqtt-max-wait must be >= debounce and <= 10s")
+		return errors.New("--mqtt-max-wait must be >= debounce and <= 10s")
 	}
 	if opt.TxDuration < 100*time.Millisecond || opt.TxDuration > 1600*time.Millisecond {
-		return errors.New("-mqtt-tx-duration must be 100ms..1600ms")
+		return errors.New("--mqtt-tx-duration must be 100ms..1600ms")
 	}
 	if opt.DedupWindow < 0 || opt.DedupWindow > time.Minute {
-		return errors.New("-mqtt-dedup-window must be 0..1m")
+		return errors.New("--mqtt-dedup-window must be 0..1m")
 	}
 
 	opt.DeviceName = c.Device.Name

@@ -45,13 +45,13 @@ Open the lamp in Smart Life, then open its settings and **Device Information**. 
 
 Use `controller.transport` to select `raw-hci`, `mgmt` (the application default), `mgmt-legacy`, or `btmgmt`. [Full configuration example](config.example.json)
 
-When the working directory contains both `config.json` and a `state/` directory, both binaries use those local files. Otherwise they use `$XDG_CONFIG_HOME/tuya-beacon-mesh-p2-controller/config.json` and `$XDG_STATE_HOME/tuya-beacon-mesh-p2-controller/state-<device-id>.json`. The base directories default to `~/.config` and `~/.local/state`. Override the config with `TUYA_BEACON_MESH_P2_CONTROLLER_CONFIG` or `-config`, and the state file with `controller.state` or `-state`. [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir/latest/)
+When the working directory contains both `config.json` and a `state/` directory, both binaries use those local files. Otherwise they use `$XDG_CONFIG_HOME/tuya-beacon-mesh-p2-controller/config.json` and `$XDG_STATE_HOME/tuya-beacon-mesh-p2-controller/state-<device-id>.json`. The base directories default to `~/.config` and `~/.local/state`. Override the config with `TUYA_BEACON_MESH_P2_CONTROLLER_CONFIG` or `--config`, and the state file with `controller.state` or `--state`. [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir/latest/)
 
 **Upgrading:** Stop any previously installed system service or manually started controller before migrating. Run `./install.sh --migrate` to install and move existing configs and snapshots from the project directory, preserving sequence numbers. The installer stops its own service first. A plain `./install.sh` skips migration. For a snapshot created under `sudo`, it may prompt for permission to read the old file. The migrated copy belongs to the login user with mode `0600`. Conflicting destination files require manual reconciliation. To move only the data, stop the user service too and run `./install.sh --migrate-only`. If you have an explicit relative `controller.state`, set it to the absolute path of your existing snapshot before restarting.
 
 ### Other key recovery options
 
-Use `learn capture.cfa` for an Android BTSnoop capture. Both learning modes back up the config when the beacon key changes. Use `-learn-out beacon-key.json` for an additional private export or `-learn-save=false` to skip the config update. Repeat recovery after pairing the lamp again. For the local key, Tuya OpenAPI users can use `-cloud-save cloud local-key` with `TUYA_CLIENT_ID` and `TUYA_CLIENT_SECRET`.
+Use `learn capture.cfa` for an Android BTSnoop capture. Both learning modes back up the config when the beacon key changes. Use `--learn-out beacon-key.json` for an additional private export or `--learn-save=false` to skip the config update. Repeat recovery after pairing the lamp again. For the local key, Tuya OpenAPI users can use `--cloud-save cloud local-key` with `TUYA_CLIENT_ID` and `TUYA_CLIENT_SECRET`.
 
 ## Usage
 
@@ -60,7 +60,7 @@ Use `learn capture.cfa` for an Android BTSnoop capture. Both learning modes back
 Place global flags before the command. A dry run prints the frames without transmitting or reserving sequence numbers.
 
 ```sh
-tuya-beacon-mesh-p2-controller -dry-run on
+tuya-beacon-mesh-p2-controller --dry-run on
 tuya-beacon-mesh-p2-controller scene list
 sudo -v
 tuya-beacon-mesh-p2-controller on

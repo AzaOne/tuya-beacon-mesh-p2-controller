@@ -63,11 +63,18 @@ func TestEntrypoints(t *testing.T) {
 	check(server, "settings", false)
 	write(cfg, `{"mqtt":{"enabled":false}}`)
 	check(server, "no enabled services", false)
-	check(cli, "Usage:", true, "-help")
+	for _, bin := range []string{cli, server} {
+		check(bin, "Usage:", true, "-h")
+		check(bin, "--config", true, "--help")
+		check(bin, "use --help", false, "-help")
+		check(bin, "use -h", false, "--h")
+		check(bin, "use --version", false, "-version")
+		check(bin, "use --config", false, "-config", cfg)
+	}
 	check(cli, "28", true, "scene", "list")
 	write(cfg, `{"device":{"device_id":"lamp","local_key":"abcdefghijklmnop","beacon_key":"pqrstuvwxyz12345"},"mqtt":{"broker":"tcp://127.0.0.1:0"}}`)
 	check(cli, "last=0x008E", true, "seq", "show")
-	check(cli, "seq=0x008F", true, "-dry-run", "on")
+	check(cli, "seq=0x008F", true, "--dry-run", "on")
 	check(cli, "last=0x008E", true, "seq", "show")
 	// Local config and state take precedence together, for both entrypoints.
 	localCfg := filepath.Join(workDir, "config.json")
@@ -81,7 +88,7 @@ func TestEntrypoints(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(workDir, "state", "state-portable.json")); err != nil {
 		t.Fatal(err)
 	}
-	check(cli, "last=0x008E", true, "-config", cfg, "-state", filepath.Join(os.Getenv("XDG_STATE_HOME"), appName, "state-lamp.json"), "seq", "show")
+	check(cli, "last=0x008E", true, "--config", cfg, "--state", filepath.Join(os.Getenv("XDG_STATE_HOME"), appName, "state-lamp.json"), "seq", "show")
 	if err := os.Remove(localCfg); err != nil {
 		t.Fatal(err)
 	}
@@ -90,9 +97,9 @@ func TestEntrypoints(t *testing.T) {
 	check(cli, `"last_reserved": 160`, true, "state", "show")
 	invalid := filepath.Join(dir, "invalid.json")
 	write(invalid, "{")
-	check(server, "state file malformed", false, "-state", invalid)
+	check(server, "state file malformed", false, "--state", invalid)
 	write(invalid, `{"version":1,"device":"other"}`)
-	check(server, "different key/device", false, "-state", invalid)
+	check(server, "different key/device", false, "--state", invalid)
 	for _, entry := range []struct {
 		bin  string
 		args []string

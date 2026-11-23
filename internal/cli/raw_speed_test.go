@@ -23,7 +23,7 @@ func TestRawHCIConfigAndCLI(t *testing.T) {
 	}
 	// Don't connect to radio; verify the raw HCI backend is accepted and
 	// the selected command can be encoded in dry-run mode.
-	if err := Run(context.Background(), []string{"-config", cfgPath, "scene", "list"}); err != nil {
+	if err := Run(context.Background(), []string{"--config", cfgPath, "scene", "list"}); err != nil {
 		t.Fatal(err)
 	}
 }

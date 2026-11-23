@@ -42,7 +42,7 @@ func TestDefaultFrameCountAndJSONOverrides(t *testing.T) {
 	if loaded.MQTT.HADiscoveryEnabled || loaded.MQTT.TopicPrefix != "bledom" || loaded.MQTT.ClientID != "unique-controller" {
 		t.Fatalf("incorrect JSON mqtt %+v", loaded.MQTT)
 	}
-	if got := config.PathFromArgs([]string{"-frames", "4", "-config", path, "on"}); got != path {
+	if got := config.PathFromArgs([]string{"--frames", "4", "--config", path, "on"}); got != path {
 		t.Fatalf("flag path %q", got)
 	}
 	if got := DevicePrefix("bledom", "example-device"); got != "bledom/example-device" {

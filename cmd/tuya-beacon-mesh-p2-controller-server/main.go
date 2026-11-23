@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"example.com/tuya-beacon-mesh-p2-controller/internal/version"
 	"flag"
 	"fmt"
 	"os"
@@ -12,11 +11,13 @@ import (
 
 	"example.com/tuya-beacon-mesh-p2-controller/internal/app"
 	"example.com/tuya-beacon-mesh-p2-controller/internal/bluez"
+	"example.com/tuya-beacon-mesh-p2-controller/internal/cliargs"
 	"example.com/tuya-beacon-mesh-p2-controller/internal/config"
+	"example.com/tuya-beacon-mesh-p2-controller/internal/version"
 )
 
 func run(args []string) error {
-	if len(args) == 1 && (args[0] == "-version" || args[0] == "--version") {
+	if len(args) == 1 && args[0] == "--version" {
 		fmt.Println(version.String())
 		return nil
 	}
@@ -26,7 +27,15 @@ func run(args []string) error {
 	flags := flag.NewFlagSet("tuya-beacon-mesh-p2-controller-server", flag.ContinueOnError)
 	path := flags.String("config", config.DefaultPath(), "configuration file")
 	statePath := flags.String("state", "", "override the configured state file")
-	if err := flags.Parse(args); err != nil {
+	flags.Usage = func() {
+		fmt.Fprintln(flags.Output(), `Usage: tuya-beacon-mesh-p2-controller-server [options]
+
+  -h, --help     show this help
+  --version      show build version
+  --config FILE  configuration file
+  --state FILE   override the configured state file`)
+	}
+	if err := cliargs.Parse(flags, args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			return nil
 		}

@@ -91,7 +91,7 @@ func queryTuyaLocalKey(ctx context.Context, client *http.Client, baseURL, client
 	if deviceID == "" {
 		return "", errors.New("empty device_id")
 	}
-	// Device ID comes from the config or a manually specified -cloud-device-id.
+	// Device ID comes from the config or a manually specified --cloud-device-id.
 	for _, r := range deviceID {
 		if !(r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || r == '-' || r == '_') {
 			return "", errors.New("device_id has invalid characters")
@@ -131,7 +131,7 @@ func RunCloudLocalKey(ctx context.Context, configPath, id, region string, save b
 	if id == "" {
 		data, err := os.ReadFile(configPath)
 		if err != nil {
-			return fmt.Errorf("read device ID from config: %w (or set -cloud-device-id)", err)
+			return fmt.Errorf("read device ID from config: %w (or set --cloud-device-id)", err)
 		}
 		var cfg config.Config
 		if err = json.Unmarshal(data, &cfg); err != nil {
@@ -149,7 +149,7 @@ func RunCloudLocalKey(ctx context.Context, configPath, id, region string, save b
 		return err
 	}
 	if !save {
-		fmt.Printf("Tuya returned a valid local_key for %s (%d characters). To store it privately, re-run with -cloud-save.\n", id, len(key))
+		fmt.Printf("Tuya returned a valid local_key for %s (%d characters). To store it privately, re-run with --cloud-save.\n", id, len(key))
 		return nil
 	}
 	changed, err := config.UpdateLocalKeyConfig(configPath, id, key)
