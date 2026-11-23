@@ -12,6 +12,7 @@ import (
 	"example.com/tuya-beacon-mesh-p2-controller/internal/app"
 	"example.com/tuya-beacon-mesh-p2-controller/internal/cliargs"
 	"example.com/tuya-beacon-mesh-p2-controller/internal/config"
+	"example.com/tuya-beacon-mesh-p2-controller/internal/ipc"
 	"example.com/tuya-beacon-mesh-p2-controller/internal/monitor"
 	"example.com/tuya-beacon-mesh-p2-controller/internal/p2"
 	"example.com/tuya-beacon-mesh-p2-controller/internal/provision"
@@ -156,6 +157,26 @@ func Run(ctx context.Context, argv []string) error {
 	}
 	if action == "seq" || action == "state" || (action == "scene" && len(args) == 2 && args[1] == "current") {
 		return stateCommand(action, lamp, args)
+	}
+	// Explicit radio overrides belong to the standalone sender.
+	if radio == app.RadioDefaults(defaults.Controller) {
+		addr, err := ipc.Address(*cfgPath, lamp.StatePath)
+		if err != nil {
+			return err
+		}
+		reply, connected, err := ipc.Call(ctx, addr, args)
+		if err != nil {
+			return fmt.Errorf("local server: %w", err)
+		}
+		if connected {
+			fmt.Fprintln(os.Stderr, "Sent via local server")
+			fmt.Fprint(os.Stdout, reply.Output)
+			fmt.Fprint(os.Stderr, reply.Warnings)
+			if reply.Error != "" {
+				return errors.New(reply.Error)
+			}
+			return nil
+		}
 	}
 	return app.ExecuteCommand(ctx, lamp, args)
 }

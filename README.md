@@ -5,6 +5,7 @@ Control a Tuya Beacon Mesh P2 lamp from Linux over Bluetooth Low Energy. The CLI
 ## Features
 
 - Control power, brightness, white temperature, RGB and HSV colors, and 28 built-in scenes with adjustable speed and brightness.
+- Send CLI lighting commands over a Unix socket to the local `raw-hci` service without `sudo` or an MQTT broker.
 - Use Home Assistant MQTT Discovery for the light, effect speed control, and bridge diagnostics.
 - Monitor commands from Smart Life, synchronize sequence numbers, and recover the beacon key from live traffic or an Android BTSnoop capture.
 
@@ -57,12 +58,13 @@ Use `learn capture.cfa` for an Android BTSnoop capture. Both learning modes back
 
 ### CLI
 
-Place global flags before the command. A dry run prints the frames without transmitting or reserving sequence numbers.
+With the user service running, lighting commands such as `tuya-beacon-mesh-p2-controller on` go directly to the local server over a Linux Unix socket. The CLI and service must run as the same user and select the same config and state paths. With the installed server and `raw-hci`, these commands need no `sudo` or MQTT broker. Set `mqtt.enabled` to `false` for a local-only server.
+
+If the server is stopped, or you override its radio settings on the command line, the CLI uses Bluetooth directly. For direct transmission, authorize the Bluetooth helper with `sudo -v` first. Place global flags before the command. A dry run prints the frames without transmitting or reserving sequence numbers.
 
 ```sh
 tuya-beacon-mesh-p2-controller --dry-run on
 tuya-beacon-mesh-p2-controller scene list
-sudo -v
 tuya-beacon-mesh-p2-controller on
 tuya-beacon-mesh-p2-controller white 4000 80
 tuya-beacon-mesh-p2-controller rgb 100 232 111

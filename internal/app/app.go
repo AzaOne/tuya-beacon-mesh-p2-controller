@@ -4,12 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"os"
+	"strings"
 	"time"
 
 	"example.com/tuya-beacon-mesh-p2-controller/internal/bluez"
 	"example.com/tuya-beacon-mesh-p2-controller/internal/config"
 	"example.com/tuya-beacon-mesh-p2-controller/internal/controller"
+	"example.com/tuya-beacon-mesh-p2-controller/internal/ipc"
 	"example.com/tuya-beacon-mesh-p2-controller/internal/mqtt"
 	"example.com/tuya-beacon-mesh-p2-controller/internal/state"
 )
@@ -104,23 +107,28 @@ func (d Device) StartBridge(ctx context.Context, opt mqtt.Options, passwordEnv s
 // Bridge flags are fixed for this session. Read device credentials and the
 // configured transmission policy for each command, as the standalone CLI does.
 func (d Device) executeBridgeCommand(ctx context.Context, args []string) error {
-	current, err := OpenDevice(d.configPath, d.Lamp.StatePath, d.Lamp.Options, d.Transport)
+	lamp, err := d.currentLamp()
 	if err != nil {
 		return err
+	}
+	return ExecuteCommand(ctx, lamp, args)
+}
+
+func (d Device) currentLamp() (controller.Controller, error) {
+	current, err := OpenDevice(d.configPath, d.Lamp.StatePath, d.Lamp.Options, d.Transport)
+	if err != nil {
+		return controller.Controller{}, err
 	}
 	current.Lamp.Options.DryRun = current.Config.Controller.DryRun || (d.Lamp.Options.DryRun && !d.Config.Controller.DryRun)
 	current.Transport.ClearAll = current.Config.Controller.ClearAll
 	current.Lamp.Sender = current.Transport
-	return ExecuteCommand(ctx, current.Lamp, args)
+	return current.Lamp, nil
 }
 
 func RunServer(ctx context.Context, configPath, statePath string) error {
 	c, err := config.Load(configPath)
 	if err != nil {
 		return err
-	}
-	if !c.MQTT.Enabled {
-		return errors.New("no enabled services: mqtt.enabled=false")
 	}
 	k1, k2, err := c.DeviceKeys()
 	if err != nil {
@@ -138,5 +146,39 @@ func RunServer(ctx context.Context, configPath, statePath string) error {
 	if err != nil {
 		return err
 	}
-	return device.StartBridge(ctx, BridgeDefaults(c), c.MQTT.PasswordEnv)
+	if _, err := device.Lamp.Snapshot(); err != nil {
+		return err
+	}
+	addr, err := ipc.Address(configPath, device.Lamp.StatePath)
+	if err != nil {
+		return err
+	}
+	listener, err := net.ListenUnix("unix", &net.UnixAddr{Name: addr, Net: "unix"})
+	if err != nil {
+		return fmt.Errorf("listen for local commands: %w", err)
+	}
+	runCommand := func(ctx context.Context, args []string) ipc.Reply {
+		lamp, err := device.currentLamp()
+		var out, warnings strings.Builder
+		if err == nil {
+			err = executeCommand(ctx, lamp, args, &out, &warnings)
+		}
+		reply := ipc.Reply{Output: out.String(), Warnings: warnings.String()}
+		if err != nil {
+			reply.Error = err.Error()
+		}
+		return reply
+	}
+	fmt.Fprintln(os.Stderr, "Listening for local CLI commands")
+	if !c.MQTT.Enabled {
+		return ipc.Serve(ctx, listener, runCommand)
+	}
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	done := make(chan error, 2)
+	go func() { done <- ipc.Serve(ctx, listener, runCommand) }()
+	go func() { done <- device.StartBridge(ctx, BridgeDefaults(c), c.MQTT.PasswordEnv) }()
+	first := <-done
+	cancel()
+	return errors.Join(first, <-done)
 }

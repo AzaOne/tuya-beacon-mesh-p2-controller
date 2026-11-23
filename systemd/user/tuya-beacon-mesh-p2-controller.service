@@ -1,5 +1,5 @@
 [Unit]
-Description=Tuya Beacon Mesh P2 MQTT controller
+Description=Tuya Beacon Mesh P2 controller
 
 [Service]
 ExecStart="@BINDIR@/tuya-beacon-mesh-p2-controller-server"

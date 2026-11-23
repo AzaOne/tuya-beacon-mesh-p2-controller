@@ -62,7 +62,7 @@ func TestEntrypoints(t *testing.T) {
 	}
 	check(server, "settings", false)
 	write(cfg, `{"mqtt":{"enabled":false}}`)
-	check(server, "no enabled services", false)
+	check(server, "device.local_key", false)
 	for _, bin := range []string{cli, server} {
 		check(bin, "Usage:", true, "-h")
 		check(bin, "--config", true, "--help")
@@ -78,12 +78,34 @@ func TestEntrypoints(t *testing.T) {
 	check(cli, "last=0x008E", true, "seq", "show")
 	// Local config and state take precedence together, for both entrypoints.
 	localCfg := filepath.Join(workDir, "config.json")
-	write(localCfg, `{"mqtt":{"enabled":false},"device":{"device_id":"portable","local_key":"abcdefghijklmnop","beacon_key":"pqrstuvwxyz12345"}}`)
+	write(localCfg, `{"controller":{"dry_run":true},"mqtt":{"enabled":false},"device":{"device_id":"portable","local_key":"abcdefghijklmnop","beacon_key":"pqrstuvwxyz12345"}}`)
 	check(cli, "state-lamp.json", true, "seq", "show")
 	if err := os.Mkdir(filepath.Join(workDir, "state"), 0700); err != nil {
 		t.Fatal(err)
 	}
-	check(server, "no enabled services", false)
+	// Run a separate server with MQTT disabled and a dry-run transmitter.
+	localServer := exec.CommandContext(ctx, server)
+	localServer.Dir = workDir
+	log, err := localServer.StderrPipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := localServer.Start(); err != nil {
+		t.Fatal(err)
+	}
+	defer localServer.Process.Kill()
+	if line, err := bufio.NewReader(log).ReadString('\n'); err != nil || !strings.Contains(line, "Listening for local CLI commands") {
+		t.Fatalf("local server: %q, %v", line, err)
+	}
+	check(server, "address already in use", false)
+	check(cli, "Sent via local server", true, "on")
+	check(cli, "unknown", false, "unknown-command")
+	if err := localServer.Process.Signal(syscall.SIGTERM); err != nil {
+		t.Fatal(err)
+	}
+	if err := localServer.Wait(); err != nil {
+		t.Fatal(err)
+	}
 	check(cli, "last=0x009F", true, "seq", "sync", "0x9f")
 	if _, err := os.Stat(filepath.Join(workDir, "state", "state-portable.json")); err != nil {
 		t.Fatal(err)
@@ -113,7 +135,13 @@ func TestEntrypoints(t *testing.T) {
 		if err := cmd.Start(); err != nil {
 			t.Fatal(err)
 		}
-		line, err := bufio.NewReader(stderr).ReadString('\n')
+		reader := bufio.NewReader(stderr)
+		if entry.bin == server {
+			if _, err := reader.ReadString('\n'); err != nil {
+				t.Fatal(err)
+			}
+		}
+		line, err := reader.ReadString('\n')
 		if err != nil || !strings.Contains(line, "MQTT disconnected") {
 			_ = cmd.Process.Kill()
 			_ = cmd.Wait()

@@ -3,7 +3,7 @@ set -euo pipefail
 
 usage() {
     echo "Usage: ./install.sh [--user] [--migrate | --migrate-only]"
-    echo "Install the CLI and raw-hci MQTT user service."
+    echo "Install the CLI and raw-hci user service."
     echo "  --migrate       Move legacy config and state into XDG directories during installation."
     echo "  --migrate-only  Move the data and exit."
 }
@@ -123,6 +123,6 @@ if [[ -f "$configdir/config.json" ]]; then
     systemctl --user enable "$name.service"
     systemctl --user restart "$name.service"
 else
-    echo "Installed. Configure $configdir/config.json with raw-hci and MQTT enabled, then run:"
+    echo "Installed. Configure $configdir/config.json with raw-hci, then run:"
     echo "  systemctl --user enable --now $name.service"
 fi
