@@ -8,26 +8,26 @@ Control a Tuya Beacon Mesh P2 lamp from Linux over Bluetooth Low Energy. The CLI
 - Use Home Assistant MQTT Discovery for the light, effect speed control, and bridge diagnostics.
 - Monitor commands from Smart Life, synchronize sequence numbers, and recover the beacon key from live traffic or an Android BTSnoop capture.
 
-## Getting Started
+## Quick start
 
-You need Linux, a Bluetooth adapter that supports LE advertising, and a paired P2 lamp. Building from source requires Go 1.23+ and a C compiler for the race tests. The server also needs an MQTT broker.
+You need a Linux amd64 or arm64 PC within Bluetooth range of the paired lamp, an adapter that supports LE advertising, and the lamp’s Smart Life account. The user installer uses systemd, `sudo`, and `setcap`. For key recovery, install `qrencode` and BlueZ’s `btmgmt`. MQTT is optional for CLI control.
 
 ### Build and install
 
-Run from the repository root on the target Linux machine. The build script checks formatting, runs vet and race tests, and produces CLI and server binaries for both amd64 and arm64.
+With Go 1.23+ and a C compiler installed, run as your login user:
 
 ```sh
+git clone https://github.com/AzaOne/tuya-beacon-mesh-p2-controller.git
+cd tuya-beacon-mesh-p2-controller
 ./build.sh
 ./install.sh
 ```
 
-Releases use `MAJOR.MINOR.PATCH` tags (for example, `1.0.0`). Bump the major version for incompatible CLI, configuration, or MQTT changes, minor for compatible features, and patch for fixes. Tag the tested release commit before pushing. Untagged history builds with the abbreviated commit hash. Both binaries accept `--version` to print the Git build identifier (tag, commit distance, and abbreviated hash for tagged history). MQTT bridge metadata uses the same identifier.
+The installer places the CLI and server in `~/.local/bin`. Include that directory in your `PATH`.
 
-The installer puts both binaries in `~/.local/bin`. Include that directory in your `PATH` to run the commands below.
+### Configure and switch on the lamp
 
-### Configure the lamp
-
-For a new installation, copy the example into the XDG configuration directory:
+From the same directory, create a private config for your user:
 
 ```sh
 configdir="${XDG_CONFIG_HOME:-$HOME/.config}/tuya-beacon-mesh-p2-controller"
@@ -35,25 +35,23 @@ install -d -m 0700 "$configdir"
 test -e "$configdir/config.json" || install -m 0600 config.example.json "$configdir/config.json"
 ```
 
-Set `device.device_id`, `device.local_key`, and `device.beacon_key` for your lamp. Check the mesh addresses in `controller.src`, `phone_src`, and `dst`. The example selects `raw-hci` for the user service. Set `mqtt.broker` if your broker runs on another host (default `tcp://localhost:1883`) and select your Bluetooth adapter in `controller.adapter`. The other supported transports are `mgmt` (default), `mgmt-legacy`, and `btmgmt`. [Full configuration example](config.example.json)
+Open the lamp in Smart Life, then open its settings and **Device Information**. Copy the lamp’s **Virtual ID** into `device.device_id` in `$configdir/config.json`. Set `controller.adapter` if your Bluetooth adapter differs from `hci0`. The example selects `raw-hci`.
+
+1. Run `tuya-beacon-mesh-p2-controller login`. Enter the **User Code** from **Smart Life → Me → Settings → Account and Security**, scan the terminal QR code with Smart Life, and confirm. The CLI saves the lamp’s local key.
+2. Run `sudo -v`, then `tuya-beacon-mesh-p2-controller learn live` as your login user. Switch the lamp off and on in Smart Life near the adapter. The CLI saves the recovered beacon key. Check the reported mesh addresses against `controller.phone_src`, `controller.src`, and `controller.dst`. If you already have both keys, enter them directly in the config and check the addresses.
+3. Run `tuya-beacon-mesh-p2-controller on` and check that the lamp turns on. For Home Assistant, configure `mqtt.broker` and credentials, then start the [user service](#user-service).
+
+## Configuration
+
+Use `controller.transport` to select `raw-hci`, `mgmt` (the application default), `mgmt-legacy`, or `btmgmt`. [Full configuration example](config.example.json)
 
 When the working directory contains both `config.json` and a `state/` directory, both binaries use those local files. Otherwise they use `$XDG_CONFIG_HOME/tuya-beacon-mesh-p2-controller/config.json` and `$XDG_STATE_HOME/tuya-beacon-mesh-p2-controller/state-<device-id>.json`. The base directories default to `~/.config` and `~/.local/state`. Override the config with `TUYA_BEACON_MESH_P2_CONTROLLER_CONFIG` or `-config`, and the state file with `controller.state` or `-state`. [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir/latest/)
 
 **Upgrading:** Stop any previously installed system service or manually started controller before migrating. Run `./install.sh --migrate` to install and move existing configs and snapshots from the project directory, preserving sequence numbers. The installer stops its own service first. A plain `./install.sh` skips migration. For a snapshot created under `sudo`, it may prompt for permission to read the old file. The migrated copy belongs to the login user with mode `0600`. Conflicting destination files require manual reconciliation. To move only the data, stop the user service too and run `./install.sh --migrate-only`. If you have an explicit relative `controller.state`, set it to the absolute path of your existing snapshot before restarting.
 
-### Obtain the keys
+### Other key recovery options
 
-If you already have both keys, continue to Usage. Otherwise, set `device.device_id` in the selected config and run these commands as your login user. Both commands update that config by default. Run `sudo -v` separately to authorize the Bluetooth helper.
-
-```sh
-tuya-beacon-mesh-p2-controller login
-sudo -v
-tuya-beacon-mesh-p2-controller learn live
-```
-
-1. For `login`, get your User Code from **Smart Life → Me → Settings → Account and Security**. Scan the displayed QR code with the app and confirm. The CLI saves the local key to the config. Install `qrencode` to display the QR in the terminal. Tuya OpenAPI credentials can also be used with `-cloud-save cloud local-key` and the environment variables `TUYA_CLIENT_ID` and `TUYA_CLIENT_SECRET`.
-2. During `learn live`, switch the lamp off and on in Smart Life with the phone near the adapter. Live scanning uses BlueZ's `btmgmt`. Alternatively, use `learn capture.cfa` with an Android Bluetooth capture.
-3. Both learning modes save the verified beacon key to `device.beacon_key` in the selected config and back up the previous config when the key changes. Use `-learn-out beacon-key.json` for an additional private export, or `-learn-save=false` to skip the config update. Check the reported source and destination against your config. Repeat key recovery if you pair the lamp again.
+Use `learn capture.cfa` for an Android BTSnoop capture. Both learning modes back up the config when the beacon key changes. Use `-learn-out beacon-key.json` for an additional private export or `-learn-save=false` to skip the config update. Repeat recovery after pairing the lamp again. For the local key, Tuya OpenAPI users can use `-cloud-save cloud local-key` with `TUYA_CLIENT_ID` and `TUYA_CLIENT_SECRET`.
 
 ## Usage
 
@@ -99,7 +97,7 @@ The service user needs read access to `config.json` and write access to the stat
 
 ### User service
 
-Run `./install.sh` as your login user after building. It installs the user unit, uses `sudo setcap` to grant the server binary `CAP_NET_RAW`, and reads the XDG config. With an existing config it enables and restarts the service. Run the same installer after rebuilding to update the binaries and reapply the capability. [User service template](systemd/user/tuya-beacon-mesh-p2-controller.service)
+Run `./install.sh` as your login user after downloading or building the binaries. It installs the user unit, uses `sudo setcap` to grant the server binary `CAP_NET_RAW`, and reads the XDG config. With an existing config it enables and restarts the service. Run the same installer after rebuilding to update the binaries and reapply the capability. [User service template](systemd/user/tuya-beacon-mesh-p2-controller.service)
 
 After creating your config on a fresh install:
 
@@ -111,6 +109,10 @@ journalctl --user -u tuya-beacon-mesh-p2-controller.service -f
 The user service starts at login. To start it at boot and keep it running after logout, use `loginctl enable-linger "$(id -un)"`.
 
 Check the journal for `MQTT connected` with `transport=raw-hci`. Send a command from Home Assistant and look for `Raw HCI: active frame=`, then check the lamp itself.
+
+## Versioning
+
+Releases use `MAJOR.MINOR.PATCH` tags (for example, `1.0.0`). Bump the major version for incompatible CLI, configuration, or MQTT changes, minor for compatible features, and patch for fixes. Tag the tested release commit before pushing. Both binaries and the MQTT bridge report the tag, commit distance, and abbreviated hash for tagged history, or the abbreviated commit hash for untagged history.
 
 ## Acknowledgments
 
