@@ -93,8 +93,12 @@ func Run(ctx context.Context, argv []string) error {
 	}
 	// Listing built-in presets requires neither secrets, state nor Bluetooth.
 	action := strings.ToLower(args[0])
-	if action == "scene" && len(args) == 2 && args[1] == "list" {
-		p2.PrintSceneList(os.Stdout)
+	if action == "scene" && len(args) >= 2 && args[1] == "list" {
+		verbose := len(args) == 3 && args[2] == "--verbose"
+		if len(args) != 2 && !verbose {
+			return errors.New("usage: tuya-beacon-mesh-p2-controller scene list [--verbose]")
+		}
+		p2.PrintSceneList(os.Stdout, verbose)
 		return nil
 	}
 	options, err := app.ValidateRadio(radio)

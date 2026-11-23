@@ -71,7 +71,8 @@ func TestEntrypoints(t *testing.T) {
 		check(bin, "use --version", false, "-version")
 		check(bin, "use --config", false, "-config", cfg)
 	}
-	check(cli, "28", true, "scene", "list")
+	check(cli, "27  RGB white jump\n", true, "scene", "list")
+	check(cli, "00000000640a40", true, "scene", "list", "--verbose")
 	write(cfg, `{"device":{"device_id":"lamp","local_key":"abcdefghijklmnop","beacon_key":"pqrstuvwxyz12345"},"mqtt":{"broker":"tcp://127.0.0.1:0"}}`)
 	check(cli, "last=0x008E", true, "seq", "show")
 	check(cli, "seq=0x008F", true, "--dry-run", "on")

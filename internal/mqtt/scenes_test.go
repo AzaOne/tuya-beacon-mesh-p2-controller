@@ -26,7 +26,7 @@ func TestSceneMonitorDescriptionsAndMQTT(t *testing.T) {
 		}
 	}
 	var list bytes.Buffer
-	p2.PrintSceneList(&list)
+	p2.PrintSceneList(&list, true)
 	if strings.Count(list.String(), "captured") != 29 {
 		t.Fatal("scene list should show 28 captured presets")
 	}

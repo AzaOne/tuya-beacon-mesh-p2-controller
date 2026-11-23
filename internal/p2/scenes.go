@@ -111,7 +111,14 @@ func validSceneRaw(id byte, raw []byte) bool {
 	return len(raw) >= 7 && len(raw) <= 14 && raw[0] == id
 }
 
-func PrintSceneList(w io.Writer) {
+func PrintSceneList(w io.Writer, verbose bool) {
+	if !verbose {
+		fmt.Fprintln(w, "ID  NAME")
+		for _, p := range ScenePresets {
+			fmt.Fprintf(w, "%2d  %s\n", p.ID, p.Name)
+		}
+		return
+	}
 	fmt.Fprintln(w, "ID   NAME                               SPEED BRIGHT STATUS      RAW")
 	for _, p := range ScenePresets {
 		status := "captured"

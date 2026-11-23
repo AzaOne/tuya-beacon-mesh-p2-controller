@@ -72,6 +72,8 @@ tuya-beacon-mesh-p2-controller scene 8 --speed 50 --brightness 80
 tuya-beacon-mesh-p2-controller state show
 ```
 
+Use `scene list --verbose` to include speed, brightness, capture status, and raw DP73 data.
+
 Use `monitor` to observe phone commands and advance the local sequence, or `seq sync-log capture.cfa` to synchronize from a recording. Run `tuya-beacon-mesh-p2-controller -h` for all commands, including raw datapoints and sequence management. [Protocol and frame format](SPEC.md)
 
 ### MQTT and Home Assistant

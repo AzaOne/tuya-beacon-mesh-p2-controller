@@ -13,7 +13,7 @@ Lighting:
   tuya-beacon-mesh-p2-controller white 4000 80
   tuya-beacon-mesh-p2-controller rgb 100 232 111 | hsv 120 100 100
   tuya-beacon-mesh-p2-controller mode white|colour|scene|music   (music not verified)
-  tuya-beacon-mesh-p2-controller scene list                        list all 28 DP73 presets
+  tuya-beacon-mesh-p2-controller scene list [--verbose]            list scene IDs and names; --verbose adds DP73 details
   tuya-beacon-mesh-p2-controller scene 8                           select by ID
   tuya-beacon-mesh-p2-controller scene "Red & blue gradient"       select by name
   tuya-beacon-mesh-p2-controller scene 8 --speed 50 --brightness 80
